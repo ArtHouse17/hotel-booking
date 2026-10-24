@@ -12,5 +12,4 @@ public interface UserRepository {
     PageDto<User> findAll(int page, int size);
     User save(User user);
     void delete(User user);
-    long count();
 }

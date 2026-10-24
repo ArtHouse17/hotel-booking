@@ -8,5 +8,4 @@ public interface HotelRepository {
     List<Hotel> findAll();
     Hotel save(Hotel hotel);
     void delete(Hotel hotel);
-    long count();
 }

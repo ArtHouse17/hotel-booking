@@ -26,7 +26,6 @@ import ru.hotel.hotel.service.*;
         properties = {
             "eureka.client.enabled=false",
             "spring.cloud.discovery.enabled=false",
-            "app.seed=false",
             "spring.datasource.url=jdbc:h2:mem:hotel-test;DB_CLOSE_DELAY=-1;LOCK_TIMEOUT=15000"
         })
 @AutoConfigureMockMvc

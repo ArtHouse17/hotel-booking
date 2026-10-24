@@ -11,7 +11,7 @@ spring:
   jpa:
     open-in-view: false
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: validate
 security:
   jwt-secret: ${JWT_SECRET:local-development-only-secret-change-before-deploy-1234567890}
 eureka:

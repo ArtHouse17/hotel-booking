@@ -20,6 +20,8 @@ docker compose up --build
 
 Тестовые аккаунты: `alice / Alice123!` (USER), `admin / Admin123!` (ADMIN).
 
+Таблицы и начальные данные создаются Flyway-миграциями в `src/main/resources/db/migration` каждого бизнес-сервиса. Пароли пользователей хранятся как BCrypt-хеши.
+
 В Swagger выполните `POST /api/auth/login`, скопируйте `token` и вставьте его в **Authorize**.
 
 - `/api/auth/register`, `/api/auth/login` — регистрация и вход.

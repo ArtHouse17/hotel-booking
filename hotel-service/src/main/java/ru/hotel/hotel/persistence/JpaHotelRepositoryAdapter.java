@@ -21,7 +21,6 @@ public class JpaHotelRepositoryAdapter implements HotelRepository {
 
     public Optional<Hotel> findById(Long id) { return jpa.findById(id).map(mapper::domain); }
     public List<Hotel> findAll() { return jpa.findAll(Sort.by("id")).stream().map(mapper::domain).toList(); }
-    public long count() { return jpa.count(); }
 
     @Transactional
     public Hotel save(Hotel hotel) {

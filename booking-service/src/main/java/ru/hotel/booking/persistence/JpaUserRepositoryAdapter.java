@@ -25,7 +25,6 @@ public class JpaUserRepositoryAdapter implements UserRepository {
     public Optional<User> lockById(Long id) { return jpa.lockById(id).map(mapper::domain); }
     public Optional<User> findByUsername(String username) { return jpa.findByUsername(username).map(mapper::domain); }
     public boolean existsByUsername(String username) { return jpa.existsByUsername(username); }
-    public long count() { return jpa.count(); }
 
     public PageDto<User> findAll(int page, int size) {
         var result = jpa.findAll(PageRequest.of(page, size, Sort.by("id")));

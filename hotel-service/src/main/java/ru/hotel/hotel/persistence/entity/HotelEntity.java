@@ -1,6 +1,7 @@
 package ru.hotel.hotel.persistence.entity;
 
 import jakarta.persistence.*;
+
 import lombok.*;
 
 @Entity

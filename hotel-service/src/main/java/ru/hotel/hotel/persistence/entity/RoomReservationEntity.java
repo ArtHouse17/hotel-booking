@@ -1,9 +1,11 @@
 package ru.hotel.hotel.persistence.entity;
 
 import jakarta.persistence.*;
+
+import lombok.*;
+
 import java.time.*;
 import java.util.UUID;
-import lombok.*;
 
 /** Local projection of booking dates; released rows are idempotency tombstones. */
 @Entity
@@ -35,7 +37,8 @@ public class RoomReservationEntity {
     @Column(nullable = false)
     private Instant createdAt = Instant.now();
 
-    public RoomReservationEntity(UUID id, RoomEntity room, LocalDate start, LocalDate end, boolean active) {
+    public RoomReservationEntity(
+            UUID id, RoomEntity room, LocalDate start, LocalDate end, boolean active) {
         this.bookingId = id;
         this.room = room;
         this.startDate = start;

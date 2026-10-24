@@ -1,9 +1,11 @@
 package ru.hotel.booking.api;
 
 import jakarta.validation.Valid;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
 import ru.hotel.booking.api.UserDtos.*;
 import ru.hotel.booking.service.UserService;
 import ru.hotel.common.PageDto;

@@ -1,15 +1,17 @@
 package ru.hotel.common.security;
 
-import java.nio.charset.StandardCharsets;
-import java.time.Instant;
-import java.util.List;
-import javax.crypto.SecretKey;
-import javax.crypto.spec.SecretKeySpec;
 import org.springframework.security.oauth2.core.*;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.*;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
+
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.util.List;
+
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
 
 public final class JwtSupport {
     public static final String ISSUER = "hotel-booking";
@@ -28,11 +30,16 @@ public final class JwtSupport {
         return new DelegatingOAuth2TokenValidator<>(
                 JwtValidators.createDefaultWithIssuer(ISSUER),
                 jwt ->
-                        jwt.getAudience().contains(AUDIENCE)
+                        jwt.getAudience() != null && jwt.getAudience().contains(AUDIENCE)
+                                ? OAuth2TokenValidatorResult.success()
+                                : OAuth2TokenValidatorResult.failure(
+                                        new OAuth2Error("invalid_token", "Invalid audience", null)),
+                jwt ->
+                        jwt.getExpiresAt() != null
                                 ? OAuth2TokenValidatorResult.success()
                                 : OAuth2TokenValidatorResult.failure(
                                         new OAuth2Error(
-                                                "invalid_token", "Invalid audience", null)));
+                                                "invalid_token", "Expiration is required", null)));
     }
 
     public static JwtAuthenticationConverter converter() {

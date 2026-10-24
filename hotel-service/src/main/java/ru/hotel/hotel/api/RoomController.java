@@ -1,14 +1,17 @@
 package ru.hotel.hotel.api;
 
 import jakarta.validation.Valid;
-import java.time.LocalDate;
-import java.util.List;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
 import ru.hotel.common.*;
 import ru.hotel.hotel.api.HotelDtos.*;
 import ru.hotel.hotel.service.*;
+
+import java.time.LocalDate;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/rooms")
@@ -41,8 +44,7 @@ public class RoomController {
 
     @GetMapping("/statistics")
     @PreAuthorize("hasRole('ADMIN')")
-    public List<RoomStatistics> statistics(
-            @RequestParam(required = false) Long hotelId) {
+    public List<RoomStatistics> statistics(@RequestParam(required = false) Long hotelId) {
         return inventory.statistics(hotelId);
     }
 

@@ -1,16 +1,19 @@
 package ru.hotel.booking.api;
 
 import jakarta.validation.Valid;
-import java.time.LocalDate;
-import java.util.*;
+
 import org.springframework.http.*;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
+
 import ru.hotel.booking.api.BookingDtos.*;
 import ru.hotel.booking.service.*;
 import ru.hotel.common.*;
+
+import java.time.LocalDate;
+import java.util.*;
 
 @RestController
 @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
@@ -32,7 +35,14 @@ public class BookingController {
                 switch (b.status()) {
                     case CONFIRMED -> outcome.created() ? 201 : 200;
                     case PENDING -> 202;
-                    case CANCELLED -> b.failureStatus() == null ? 409 : b.failureStatus();
+                    case CANCELLED ->
+                            throw new ApiException(
+                                    HttpStatus.valueOf(
+                                            b.failureStatus() == null ? 409 : b.failureStatus()),
+                                    b.failureReason() == null
+                                            ? "Booking cancelled"
+                                            : b.failureReason(),
+                                    b.id());
                 };
         return ResponseEntity.status(status).body(b);
     }

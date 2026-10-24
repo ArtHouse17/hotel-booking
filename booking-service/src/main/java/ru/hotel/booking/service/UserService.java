@@ -5,12 +5,15 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import ru.hotel.booking.api.*;
 import ru.hotel.booking.api.UserDtos.*;
 import ru.hotel.booking.domain.*;
 import ru.hotel.booking.domain.repository.*;
 import ru.hotel.common.*;
 import ru.hotel.common.security.JwtSupport;
+
+import java.nio.charset.StandardCharsets;
 
 @Service
 @Transactional(readOnly = true)
@@ -40,6 +43,7 @@ public class UserService {
     }
 
     public TokenView login(Credentials input) {
+        validatePassword(input.password());
         var user =
                 users.findByUsername(input.username())
                         .orElseThrow(
@@ -76,7 +80,10 @@ public class UserService {
     public UserView update(Long id, UserPatch input) {
         var user = users.lockById(id).orElseThrow(() -> ApiException.notFound("User not found"));
         if (input.username() != null) user.setUsername(input.username());
-        if (input.password() != null) user.setPassword(passwords.encode(input.password()));
+        if (input.password() != null) {
+            validatePassword(input.password());
+            user.setPassword(passwords.encode(input.password()));
+        }
         if (input.role() != null) user.setRole(input.role());
         return mapper.user(users.save(user));
     }
@@ -89,9 +96,18 @@ public class UserService {
     }
 
     private User create(String username, String password, Role role) {
+        validatePassword(password);
         if (users.existsByUsername(username))
             throw ApiException.conflict("Username is already taken");
         return users.save(new User(username, passwords.encode(password), role));
+    }
+
+    private void validatePassword(String password) {
+        if (password == null
+                || password.isBlank()
+                || password.getBytes(StandardCharsets.UTF_8).length > 72) {
+            throw ApiException.badRequest("Password must be non-blank and at most 72 UTF-8 bytes");
+        }
     }
 
     private User find(Long id) {

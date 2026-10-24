@@ -1,14 +1,16 @@
 package ru.hotel.hotel.service;
 
-import java.time.*;
-import java.util.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import ru.hotel.common.*;
 import ru.hotel.hotel.api.*;
 import ru.hotel.hotel.api.HotelDtos.*;
 import ru.hotel.hotel.domain.*;
 import ru.hotel.hotel.domain.repository.*;
+
+import java.time.*;
+import java.util.*;
 
 @Service
 @Transactional(readOnly = true)

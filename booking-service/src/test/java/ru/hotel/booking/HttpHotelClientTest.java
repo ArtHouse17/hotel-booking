@@ -5,16 +5,19 @@ import static org.springframework.test.web.client.match.MockRestRequestMatchers.
 import static org.springframework.test.web.client.response.MockRestResponseCreators.*;
 
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
-import java.time.*;
-import java.util.UUID;
+
 import org.junit.jupiter.api.*;
 import org.springframework.http.*;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.test.web.client.*;
 import org.springframework.web.client.*;
+
 import ru.hotel.booking.client.*;
 import ru.hotel.common.*;
 import ru.hotel.common.security.JwtSupport;
+
+import java.time.*;
+import java.util.UUID;
 
 class HttpHotelClientTest {
     private RestTemplate http;
@@ -73,5 +76,17 @@ class HttpHotelClientTest {
         server.verify();
     }
 
-
+    @Test
+    void missingDiscoveryInstanceIsRetriedAndReportedAsUnavailable() {
+        server.expect(ExpectedCount.times(3), anything())
+                .andRespond(
+                        request -> {
+                            throw new IllegalStateException(
+                                    "No instances available for hotel-service");
+                        });
+        assertThatThrownBy(() -> client.confirm(1L, command))
+                .isInstanceOfSatisfying(
+                        HotelCallException.class, e -> assertThat(e.status()).isEqualTo(503));
+        server.verify();
+    }
 }

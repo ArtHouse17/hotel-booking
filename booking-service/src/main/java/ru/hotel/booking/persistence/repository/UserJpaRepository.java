@@ -1,9 +1,12 @@
 package ru.hotel.booking.persistence.repository;
 
 import jakarta.persistence.LockModeType;
-import java.util.Optional;
+
 import org.springframework.data.jpa.repository.*;
+
 import ru.hotel.booking.persistence.entity.UserEntity;
+
+import java.util.Optional;
 
 public interface UserJpaRepository extends JpaRepository<UserEntity, Long> {
     Optional<UserEntity> findByUsername(String username);

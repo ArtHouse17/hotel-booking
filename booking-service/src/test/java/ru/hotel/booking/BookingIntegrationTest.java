@@ -7,9 +7,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.time.*;
-import java.util.*;
-import java.util.concurrent.*;
+
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -18,6 +16,7 @@ import org.springframework.http.MediaType;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+
 import ru.hotel.booking.api.BookingDtos.*;
 import ru.hotel.booking.api.UserDtos.*;
 import ru.hotel.booking.client.*;
@@ -26,6 +25,10 @@ import ru.hotel.booking.persistence.repository.*;
 import ru.hotel.booking.service.*;
 import ru.hotel.common.*;
 import ru.hotel.common.security.JwtSupport;
+
+import java.time.*;
+import java.util.*;
+import java.util.concurrent.*;
 
 @SpringBootTest(
         properties = {
@@ -93,7 +96,7 @@ class BookingIntegrationTest {
         var b = service.create(alice, manual()).booking();
         assertThat(b.status()).isEqualTo(BookingStatus.CANCELLED);
         assertThat(b.compensationRequired()).isTrue();
-        service.compensate(b);
+        service.cancel(alice, b.id());
         assertThat(transactions.internal(b.id()).compensationRequired()).isFalse();
         verify(hotel, times(2)).release(eq(1L), any());
     }
@@ -232,12 +235,196 @@ class BookingIntegrationTest {
     }
 
     @Test
+    void autoSelectionIgnoresRoomIdEvenWhenItIsNegative() throws Exception {
+        when(hotel.recommend(any(), any(), any()))
+                .thenReturn(List.of(new RoomView(2L, 1L, "102", true, 0)));
+        var request = new CreateBooking(UUID.randomUUID(), true, -1L, 1L, start, end);
+        mvc.perform(
+                        post("/api/bookings")
+                                .header("Authorization", "Bearer " + token)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(json.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.roomId").value(2));
+    }
+
+    @Test
+    void over72BytePasswordsReturn400InsteadOf500() throws Exception {
+        var payload = json.writeValueAsString(new Credentials("newuser", "я".repeat(40)));
+        mvc.perform(
+                        post("/api/auth/register")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(payload))
+                .andExpect(status().isBadRequest());
+        mvc.perform(
+                        post("/api/auth/login")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(
+                                        json.writeValueAsString(
+                                                new Credentials("alice", "я".repeat(40)))))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void adminCannotSetBlankPassword() throws Exception {
+        var adminToken = JwtSupport.token(encoder, alice.toString(), "ADMIN", 3600);
+        mvc.perform(
+                        patch("/api/users/{id}", bob)
+                                .header("Authorization", "Bearer " + adminToken)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"password\":\"        \"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void manualSelectionRequiresPositiveRoomId() throws Exception {
+        var request = new CreateBooking(UUID.randomUUID(), false, -1L, null, start, end);
+        mvc.perform(
+                        post("/api/bookings")
+                                .header("Authorization", "Bearer " + token)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(json.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+        verify(hotel, never()).confirm(anyLong(), any());
+    }
+
+    @Test
+    void failedBookingUsesErrorDtoAndKeepsCancelledBookingAccessible() throws Exception {
+        doThrow(remote(503)).when(hotel).confirm(anyLong(), any());
+        String result =
+                mvc.perform(
+                                post("/api/bookings")
+                                        .header("Authorization", "Bearer " + token)
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .content(json.writeValueAsString(manual())))
+                        .andExpect(status().isServiceUnavailable())
+                        .andExpect(jsonPath("$.status").value(503))
+                        .andExpect(jsonPath("$.bookingId").isString())
+                        .andExpect(jsonPath("$.traceId").isString())
+                        .andReturn()
+                        .getResponse()
+                        .getContentAsString();
+        mvc.perform(
+                        get("/api/bookings/{id}", json.readTree(result).get("bookingId").asText())
+                                .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("CANCELLED"));
+    }
+
+    @Test
+    void sameRequestIdWithDifferentParametersIsConflict() throws Exception {
+        var request = manual();
+        service.create(alice, request);
+        var changed = new CreateBooking(request.requestId(), false, 2L, null, start, end);
+        mvc.perform(
+                        post("/api/bookings")
+                                .header("Authorization", "Bearer " + token)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(json.writeValueAsString(changed)))
+                .andExpect(status().isConflict());
+        verify(hotel, times(1)).confirm(anyLong(), any());
+    }
+
+    @Test
+    void concurrentDuplicateDeliveryCreatesOnlyOneBooking() throws Exception {
+        var request = manual();
+        var gate = new CountDownLatch(1);
+        var pool = Executors.newFixedThreadPool(8);
+        try {
+            List<Future<BookingOutcome>> futures = new ArrayList<>();
+            for (int i = 0; i < 16; i++)
+                futures.add(
+                        pool.submit(
+                                () -> {
+                                    gate.await();
+                                    return service.create(alice, request);
+                                }));
+            gate.countDown();
+            Set<UUID> ids = new HashSet<>();
+            for (var future : futures) ids.add(future.get(20, TimeUnit.SECONDS).booking().id());
+            assertThat(ids).hasSize(1);
+            assertThat(bookings.count()).isEqualTo(1);
+            verify(hotel, times(1)).confirm(anyLong(), any());
+        } finally {
+            pool.shutdownNow();
+        }
+    }
+
+    @Test
+    void cancellationDuringConfirmationCannotConfirmCancelledBooking() throws Exception {
+        var entered = new CountDownLatch(1);
+        var finish = new CountDownLatch(1);
+        doAnswer(
+                        invocation -> {
+                            entered.countDown();
+                            assertThat(finish.await(10, TimeUnit.SECONDS)).isTrue();
+                            return null;
+                        })
+                .when(hotel)
+                .confirm(anyLong(), any());
+        var pool = Executors.newSingleThreadExecutor();
+        try {
+            var result = pool.submit(() -> service.create(alice, manual()));
+            assertThat(entered.await(10, TimeUnit.SECONDS)).isTrue();
+            UUID id = bookings.findAll().get(0).getId();
+            service.cancel(alice, id);
+            finish.countDown();
+            assertThat(result.get(10, TimeUnit.SECONDS).booking().status())
+                    .isEqualTo(BookingStatus.CANCELLED);
+            assertThat(transactions.internal(id).compensationRequired()).isFalse();
+        } finally {
+            finish.countDown();
+            pool.shutdownNow();
+        }
+    }
+
+    @Test
+    void adminCanCreateReadUpdateAndDeleteUser() throws Exception {
+        var adminToken = JwtSupport.token(encoder, alice.toString(), "ADMIN", 3600);
+        String created =
+                mvc.perform(
+                                post("/api/users")
+                                        .header("Authorization", "Bearer " + adminToken)
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .content(
+                                                json.writeValueAsString(
+                                                        new UserInput(
+                                                                "managed",
+                                                                "Managed123!",
+                                                                Role.USER))))
+                        .andExpect(status().isCreated())
+                        .andReturn()
+                        .getResponse()
+                        .getContentAsString();
+        long id = json.readTree(created).get("id").asLong();
+        mvc.perform(get("/api/users/{id}", id).header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.username").value("managed"));
+        mvc.perform(
+                        patch("/api/users/{id}", id)
+                                .header("Authorization", "Bearer " + adminToken)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"username\":\"renamed\",\"role\":\"ADMIN\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.role").value("ADMIN"));
+        mvc.perform(delete("/api/users/{id}", id).header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isNoContent());
+        mvc.perform(get("/api/users/{id}", id).header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
     void userChangesArePersistedAcrossDomainMapping() {
         userService.update(alice, new UserPatch("aliceupdated", "NewPassword123!", Role.ADMIN));
         var reloaded = userService.get(alice);
         assertThat(reloaded.username()).isEqualTo("aliceupdated");
         assertThat(reloaded.role()).isEqualTo(Role.ADMIN);
-        assertThat(userService.login(new Credentials("aliceupdated", "NewPassword123!")).user().role()).isEqualTo(Role.ADMIN);
+        assertThat(
+                        userService
+                                .login(new Credentials("aliceupdated", "NewPassword123!"))
+                                .user()
+                                .role())
+                .isEqualTo(Role.ADMIN);
     }
 
     private HotelCallException remote(int status) {

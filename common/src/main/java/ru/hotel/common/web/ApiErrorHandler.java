@@ -1,8 +1,7 @@
 package ru.hotel.common.web;
 
 import jakarta.servlet.http.HttpServletRequest;
-import java.time.Instant;
-import java.util.*;
+
 import org.slf4j.*;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.*;
@@ -12,7 +11,11 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+
 import ru.hotel.common.*;
+
+import java.time.Instant;
+import java.util.*;
 
 @RestControllerAdvice
 public class ApiErrorHandler {
@@ -20,7 +23,7 @@ public class ApiErrorHandler {
 
     @ExceptionHandler(ApiException.class)
     ResponseEntity<ErrorDto> business(ApiException e, HttpServletRequest request) {
-        return error(e.status(), e.getMessage(), request, Map.of());
+        return error(e.status(), e.getMessage(), request, Map.of(), e.bookingId());
     }
 
     @ExceptionHandler(DomainConflictException.class)
@@ -84,6 +87,15 @@ public class ApiErrorHandler {
 
     private ResponseEntity<ErrorDto> error(
             HttpStatus status, String message, HttpServletRequest req, Map<String, String> fields) {
+        return error(status, message, req, fields, null);
+    }
+
+    private ResponseEntity<ErrorDto> error(
+            HttpStatus status,
+            String message,
+            HttpServletRequest req,
+            Map<String, String> fields,
+            UUID bookingId) {
         return ResponseEntity.status(status)
                 .body(
                         new ErrorDto(
@@ -92,6 +104,7 @@ public class ApiErrorHandler {
                                 message,
                                 req.getRequestURI(),
                                 MDC.get("traceId"),
-                                fields));
+                                fields,
+                                bookingId));
     }
 }

@@ -1,6 +1,7 @@
 package ru.hotel.booking.api;
 
 import org.mapstruct.*;
+
 import ru.hotel.booking.api.BookingDtos.BookingView;
 import ru.hotel.booking.api.UserDtos.UserView;
 import ru.hotel.booking.domain.*;

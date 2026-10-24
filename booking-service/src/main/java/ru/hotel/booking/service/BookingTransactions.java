@@ -1,14 +1,16 @@
 package ru.hotel.booking.service;
 
-import java.util.*;
 import org.slf4j.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import ru.hotel.booking.api.*;
 import ru.hotel.booking.api.BookingDtos.*;
 import ru.hotel.booking.domain.*;
 import ru.hotel.booking.domain.repository.*;
 import ru.hotel.common.*;
+
+import java.util.*;
 
 /** Each public mutation is one short local transaction; no HTTP call holds a DB lock. */
 @Service
@@ -28,8 +30,8 @@ public class BookingTransactions {
 
     public BookingOutcome begin(Long userId, CreateBooking input) {
         DateRange.validate(input.startDate(), input.endDate());
-        if (!input.autoSelect() && input.roomId() == null)
-            throw ApiException.badRequest("roomId is required when autoSelect=false");
+        if (!input.autoSelect() && (input.roomId() == null || input.roomId() <= 0))
+            throw ApiException.badRequest("A positive roomId is required when autoSelect=false");
         // Serializing requests per user makes create-or-replay atomic, also across service
         // instances.
         var user =
@@ -118,7 +120,6 @@ public class BookingTransactions {
                 result.totalElements(),
                 result.totalPages());
     }
-
 
     private Booking lock(UUID id) {
         return bookings.lockById(id).orElseThrow(() -> ApiException.notFound("Booking not found"));

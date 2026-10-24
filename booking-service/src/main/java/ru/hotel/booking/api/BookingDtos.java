@@ -1,9 +1,11 @@
 package ru.hotel.booking.api;
 
 import jakarta.validation.constraints.*;
+
+import ru.hotel.booking.domain.BookingStatus;
+
 import java.time.*;
 import java.util.UUID;
-import ru.hotel.booking.domain.BookingStatus;
 
 public final class BookingDtos {
     private BookingDtos() {}
@@ -11,7 +13,7 @@ public final class BookingDtos {
     public record CreateBooking(
             @NotNull UUID requestId,
             @NotNull Boolean autoSelect,
-            @Positive Long roomId,
+            Long roomId,
             @Positive Long hotelId,
             @NotNull @FutureOrPresent LocalDate startDate,
             @NotNull @Future LocalDate endDate) {

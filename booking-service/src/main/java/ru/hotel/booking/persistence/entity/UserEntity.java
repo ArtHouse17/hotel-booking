@@ -1,9 +1,10 @@
 package ru.hotel.booking.persistence.entity;
 
 import jakarta.persistence.*;
-import ru.hotel.booking.domain.Role;
-import ru.hotel.booking.domain.BookingStatus;
+
 import lombok.*;
+
+import ru.hotel.booking.domain.Role;
 
 @Entity
 @Table(name = "users")

@@ -1,12 +1,14 @@
 package ru.hotel.booking.service;
 
-import java.time.*;
-import java.util.*;
 import org.slf4j.*;
 import org.springframework.stereotype.Service;
+
 import ru.hotel.booking.api.BookingDtos.*;
 import ru.hotel.booking.client.*;
 import ru.hotel.common.*;
+
+import java.time.*;
+import java.util.*;
 
 @Service
 public class BookingService {

@@ -2,10 +2,12 @@ package ru.hotel.hotel.domain;
 
 import static org.assertj.core.api.Assertions.*;
 
+import org.junit.jupiter.api.Test;
+
+import ru.hotel.common.DomainConflictException;
+
 import java.time.LocalDate;
 import java.util.UUID;
-import org.junit.jupiter.api.Test;
-import ru.hotel.common.DomainConflictException;
 
 class RoomTest {
     @Test
@@ -19,7 +21,13 @@ class RoomTest {
     void repeatedReleaseDoesNotChangeCounterTwice() {
         var room = new Room(new Hotel("Hotel", "City"), "101", true);
         room.setId(1L);
-        var slot = new RoomReservation(UUID.randomUUID(), room, LocalDate.of(2027, 1, 1), LocalDate.of(2027, 1, 3), true);
+        var slot =
+                new RoomReservation(
+                        UUID.randomUUID(),
+                        room,
+                        LocalDate.of(2027, 1, 1),
+                        LocalDate.of(2027, 1, 3),
+                        true);
         room.book();
         if (slot.release()) room.release();
         if (slot.release()) room.release();

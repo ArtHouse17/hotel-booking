@@ -3,6 +3,7 @@ package ru.hotel.booking;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Import;
+
 import ru.hotel.common.security.JwtConfiguration;
 import ru.hotel.common.web.ServletSecurity;
 

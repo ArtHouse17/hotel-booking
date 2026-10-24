@@ -1,9 +1,12 @@
 package ru.hotel.hotel.domain;
 
 import lombok.*;
+
 import ru.hotel.common.DomainConflictException;
 
-@Getter @Setter @NoArgsConstructor
+@Getter
+@Setter
+@NoArgsConstructor
 public class Room {
     private Long id;
     private Hotel hotel;
@@ -22,5 +25,7 @@ public class Room {
         timesBooked++;
     }
 
-    public void release() { timesBooked = Math.max(0, timesBooked - 1); }
+    public void release() {
+        timesBooked = Math.max(0, timesBooked - 1);
+    }
 }

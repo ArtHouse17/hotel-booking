@@ -1,11 +1,15 @@
 package ru.hotel.hotel.domain;
 
-import java.time.*;
-import java.util.UUID;
 import lombok.*;
+
 import ru.hotel.common.DomainConflictException;
 
-@Getter @Setter @NoArgsConstructor
+import java.time.*;
+import java.util.UUID;
+
+@Getter
+@Setter
+@NoArgsConstructor
 public class RoomReservation {
     private UUID bookingId;
     private Room room;
@@ -24,7 +28,8 @@ public class RoomReservation {
 
     public void verifyData(Long roomId, LocalDate start, LocalDate end) {
         if (!room.getId().equals(roomId) || !startDate.equals(start) || !endDate.equals(end)) {
-            throw new DomainConflictException("bookingId was already used with different reservation data");
+            throw new DomainConflictException(
+                    "bookingId was already used with different reservation data");
         }
     }
 

@@ -1,6 +1,7 @@
 package ru.hotel.hotel.api;
 
 import org.mapstruct.*;
+
 import ru.hotel.common.RoomView;
 import ru.hotel.hotel.api.HotelDtos.HotelView;
 import ru.hotel.hotel.domain.*;

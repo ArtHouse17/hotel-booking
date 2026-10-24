@@ -1,6 +1,7 @@
 package ru.hotel.booking.api;
 
 import jakarta.validation.constraints.*;
+
 import ru.hotel.booking.domain.Role;
 
 public final class UserDtos {

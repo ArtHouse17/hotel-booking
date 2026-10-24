@@ -3,6 +3,7 @@ package ru.hotel.hotel.service;
 import org.slf4j.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import ru.hotel.common.*;
 import ru.hotel.hotel.domain.*;
 import ru.hotel.hotel.domain.repository.*;
@@ -70,5 +71,4 @@ public class ReservationService {
     private Room lock(Long id) {
         return rooms.lockById(id).orElseThrow(() -> ApiException.notFound("Room not found"));
     }
-
 }

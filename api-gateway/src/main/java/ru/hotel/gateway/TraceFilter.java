@@ -1,12 +1,15 @@
 package ru.hotel.gateway;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.util.UUID;
+
 import org.slf4j.*;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.*;
+
 import reactor.core.publisher.Mono;
+
+import java.util.UUID;
 
 @Component
 @Order(-200)
@@ -39,7 +42,8 @@ public class TraceFilter implements WebFilter {
                 .doFinally(
                         signal ->
                                 log.info(
-                                        "event=gateway_request traceId={} method={} path={} status={}",
+                                        "event=gateway_request traceId={} method={} path={}"
+                                            + " status={}",
                                         trace,
                                         exchange.getRequest().getMethod(),
                                         path,

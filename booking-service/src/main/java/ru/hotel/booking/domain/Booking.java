@@ -1,11 +1,15 @@
 package ru.hotel.booking.domain;
 
-import java.time.*;
-import java.util.UUID;
 import lombok.*;
+
 import ru.hotel.common.DomainConflictException;
 
-@Getter @Setter @NoArgsConstructor
+import java.time.*;
+import java.util.UUID;
+
+@Getter
+@Setter
+@NoArgsConstructor
 public class Booking {
     private UUID id = UUID.randomUUID();
     private User user;
@@ -45,6 +49,7 @@ public class Booking {
     }
 
     private void requirePending() {
-        if (status != BookingStatus.PENDING) throw new DomainConflictException("Booking is no longer pending");
+        if (status != BookingStatus.PENDING)
+            throw new DomainConflictException("Booking is no longer pending");
     }
 }

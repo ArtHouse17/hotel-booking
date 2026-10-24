@@ -1,8 +1,7 @@
 package ru.hotel.gateway;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.time.Instant;
-import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.route.*;
 import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder;
@@ -14,9 +13,14 @@ import org.springframework.security.oauth2.jwt.*;
 import org.springframework.security.oauth2.server.resource.authentication.ReactiveJwtAuthenticationConverterAdapter;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.web.server.ServerWebExchange;
+
 import reactor.core.publisher.Mono;
+
 import ru.hotel.common.ErrorDto;
 import ru.hotel.common.security.JwtSupport;
+
+import java.time.Instant;
+import java.util.Map;
 
 @Configuration
 public class GatewayConfiguration {

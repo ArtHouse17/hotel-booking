@@ -1,8 +1,7 @@
 package ru.hotel.common.web;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.time.Instant;
-import java.util.Map;
+
 import org.slf4j.MDC;
 import org.springframework.context.annotation.*;
 import org.springframework.http.MediaType;
@@ -10,8 +9,12 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+
 import ru.hotel.common.ErrorDto;
 import ru.hotel.common.security.JwtSupport;
+
+import java.time.Instant;
+import java.util.Map;
 
 @Configuration
 @EnableMethodSecurity

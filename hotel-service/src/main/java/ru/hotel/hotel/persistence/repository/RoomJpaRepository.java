@@ -1,10 +1,13 @@
 package ru.hotel.hotel.persistence.repository;
 
 import jakarta.persistence.LockModeType;
+
+import org.springframework.data.jpa.repository.*;
+
+import ru.hotel.hotel.persistence.entity.RoomEntity;
+
 import java.time.LocalDate;
 import java.util.*;
-import org.springframework.data.jpa.repository.*;
-import ru.hotel.hotel.persistence.entity.RoomEntity;
 
 public interface RoomJpaRepository extends JpaRepository<RoomEntity, Long> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)

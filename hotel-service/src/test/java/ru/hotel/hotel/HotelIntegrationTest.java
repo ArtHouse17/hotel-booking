@@ -5,9 +5,6 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-import java.time.*;
-import java.util.*;
-import java.util.concurrent.*;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -16,11 +13,16 @@ import org.springframework.http.MediaType;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.test.web.servlet.MockMvc;
+
 import ru.hotel.common.*;
 import ru.hotel.common.security.JwtSupport;
 import ru.hotel.hotel.api.HotelDtos.*;
 import ru.hotel.hotel.persistence.repository.*;
 import ru.hotel.hotel.service.*;
+
+import java.time.*;
+import java.util.*;
+import java.util.concurrent.*;
 
 @SpringBootTest(
         properties = {
@@ -253,5 +255,88 @@ class HotelIntegrationTest {
 
     private ReservationCommand command() {
         return new ReservationCommand(UUID.randomUUID(), start, end);
+    }
+
+    @Test
+    void tokenWithoutAudienceIsUnauthorized() throws Exception {
+        var claims =
+                org.springframework.security.oauth2.jwt.JwtClaimsSet.builder()
+                        .issuer(JwtSupport.ISSUER)
+                        .subject("1")
+                        .issuedAt(Instant.now())
+                        .expiresAt(Instant.now().plusSeconds(3600))
+                        .claim("roles", List.of("USER"))
+                        .build();
+        mvc.perform(get("/api/hotels").header("Authorization", "Bearer " + signedToken(claims)))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void tokenWithoutExpirationIsUnauthorized() throws Exception {
+        var claims =
+                org.springframework.security.oauth2.jwt.JwtClaimsSet.builder()
+                        .issuer(JwtSupport.ISSUER)
+                        .subject("1")
+                        .audience(List.of(JwtSupport.AUDIENCE))
+                        .issuedAt(Instant.now())
+                        .claim("roles", List.of("USER"))
+                        .build();
+        mvc.perform(get("/api/hotels").header("Authorization", "Bearer " + signedToken(claims)))
+                .andExpect(status().isUnauthorized());
+    }
+
+    private String signedToken(org.springframework.security.oauth2.jwt.JwtClaimsSet claims) {
+        return encoder.encode(
+                        org.springframework.security.oauth2.jwt.JwtEncoderParameters.from(
+                                org.springframework.security.oauth2.jwt.JwsHeader.with(
+                                                org.springframework.security.oauth2.jose.jws
+                                                        .MacAlgorithm.HS256)
+                                        .build(),
+                                claims))
+                .getTokenValue();
+    }
+
+    @Test
+    void releaseBeforeDelayedConfirmationPreventsReactivation() {
+        var request = command();
+        reservations.release(roomId, request);
+        assertThatThrownBy(() -> reservations.confirm(roomId, request))
+                .isInstanceOf(DomainConflictException.class);
+        assertThat(inventory.room(roomId).timesBooked()).isZero();
+        assertThat(inventory.available(hotelId, start, end, true)).hasSize(1);
+    }
+
+    @Test
+    void adminCanCreateReadUpdateAndDeleteRoom() throws Exception {
+        var admin = jwt().authorities(new SimpleGrantedAuthority("ROLE_ADMIN"));
+        String created =
+                mvc.perform(
+                                post("/api/rooms")
+                                        .with(admin)
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .content(
+                                                "{\"hotelId\":"
+                                                        + hotelId
+                                                        + ",\"number\":\"202\",\"available\":true}"))
+                        .andExpect(status().isCreated())
+                        .andReturn()
+                        .getResponse()
+                        .getContentAsString();
+        var id =
+                new com.fasterxml.jackson.databind.ObjectMapper()
+                        .readTree(created)
+                        .get("id")
+                        .asLong();
+        mvc.perform(get("/api/rooms/{id}", id).with(admin)).andExpect(status().isOk());
+        mvc.perform(
+                        put("/api/rooms/{id}", id)
+                                .with(admin)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"number\":\"203\",\"available\":false}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.available").value(false));
+        mvc.perform(get("/api/rooms/statistics").with(admin)).andExpect(status().isOk());
+        mvc.perform(delete("/api/rooms/{id}", id).with(admin)).andExpect(status().isNoContent());
+        mvc.perform(get("/api/rooms/{id}", id).with(admin)).andExpect(status().isNotFound());
     }
 }

@@ -1,11 +1,13 @@
 package ru.hotel.booking.persistence.entity;
 
 import jakarta.persistence.*;
-import ru.hotel.booking.domain.Role;
+
+import lombok.*;
+
 import ru.hotel.booking.domain.BookingStatus;
+
 import java.time.*;
 import java.util.UUID;
-import lombok.*;
 
 @Entity
 @Table(
@@ -14,9 +16,7 @@ import lombok.*;
                 @UniqueConstraint(
                         name = "uq_booking_request",
                         columnNames = {"user_id", "request_id"}),
-        indexes = {
-            @Index(name = "idx_booking_owner", columnList = "user_id,created_at")
-        })
+        indexes = {@Index(name = "idx_booking_owner", columnList = "user_id,created_at")})
 @Getter
 @Setter
 @NoArgsConstructor

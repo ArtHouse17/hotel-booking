@@ -18,9 +18,5 @@ public final class HotelDtos {
     public record RoomUpdate(@NotBlank @Size(max = 30) String number, @NotNull Boolean available) {}
 
     public record RoomStatistics(
-            Long roomId,
-            Long hotelId,
-            String number,
-            boolean available,
-            long timesBooked) {}
+            Long roomId, Long hotelId, String number, boolean available, long timesBooked) {}
 }

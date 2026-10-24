@@ -2,7 +2,9 @@ package ru.hotel.hotel.domain;
 
 import lombok.*;
 
-@Getter @Setter @NoArgsConstructor
+@Getter
+@Setter
+@NoArgsConstructor
 public class Hotel {
     private Long id;
     private String name;

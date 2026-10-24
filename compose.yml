@@ -1,0 +1,46 @@
+services:
+  discovery-server:
+    build:
+      context: .
+      args:
+        SERVICE: discovery-server
+    ports:
+      - "127.0.0.1:8761:8761"
+
+  hotel-service:
+    build:
+      context: .
+      args:
+        SERVICE: hotel-service
+    environment:
+      EUREKA_URL: http://discovery-server:8761/eureka/
+      EUREKA_HOSTNAME: hotel-service
+    depends_on:
+      - discovery-server
+
+  booking-service:
+    build:
+      context: .
+      args:
+        SERVICE: booking-service
+    environment:
+      EUREKA_URL: http://discovery-server:8761/eureka/
+      EUREKA_HOSTNAME: booking-service
+    depends_on:
+      - discovery-server
+      - hotel-service
+
+  api-gateway:
+    build:
+      context: .
+      args:
+        SERVICE: api-gateway
+    environment:
+      EUREKA_URL: http://discovery-server:8761/eureka/
+      EUREKA_HOSTNAME: api-gateway
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      - discovery-server
+      - hotel-service
+      - booking-service

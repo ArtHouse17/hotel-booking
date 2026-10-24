@@ -1,0 +1,9 @@
+.git
+**/target
+.runtime
+.tools
+.maven-cache
+.idea
+.env
+*.log
+*.zip

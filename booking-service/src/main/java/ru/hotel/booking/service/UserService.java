@@ -1,6 +1,5 @@
 package ru.hotel.booking.service;
 
-import org.springframework.data.domain.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
@@ -9,7 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.hotel.booking.api.*;
 import ru.hotel.booking.api.UserDtos.*;
 import ru.hotel.booking.domain.*;
-import ru.hotel.booking.repository.*;
+import ru.hotel.booking.domain.repository.*;
 import ru.hotel.common.*;
 import ru.hotel.common.security.JwtSupport;
 
@@ -55,13 +54,13 @@ public class UserService {
     public PageDto<UserView> list(int page, int size) {
         if (page < 0 || size < 1 || size > 100)
             throw ApiException.badRequest("page >= 0; size must be 1..100");
-        var result = users.findAll(PageRequest.of(page, size, Sort.by("id")));
+        var result = users.findAll(page, size);
         return new PageDto<>(
-                result.map(mapper::user).getContent(),
+                result.content().stream().map(mapper::user).toList(),
                 page,
                 size,
-                result.getTotalElements(),
-                result.getTotalPages());
+                result.totalElements(),
+                result.totalPages());
     }
 
     public UserView get(Long id) {
@@ -79,7 +78,7 @@ public class UserService {
         if (input.username() != null) user.setUsername(input.username());
         if (input.password() != null) user.setPassword(passwords.encode(input.password()));
         if (input.role() != null) user.setRole(input.role());
-        return mapper.user(user);
+        return mapper.user(users.save(user));
     }
 
     @Transactional

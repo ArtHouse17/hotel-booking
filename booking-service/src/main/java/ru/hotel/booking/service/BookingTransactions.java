@@ -2,13 +2,12 @@ package ru.hotel.booking.service;
 
 import java.util.*;
 import org.slf4j.*;
-import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.hotel.booking.api.*;
 import ru.hotel.booking.api.BookingDtos.*;
 import ru.hotel.booking.domain.*;
-import ru.hotel.booking.repository.*;
+import ru.hotel.booking.domain.repository.*;
 import ru.hotel.common.*;
 
 /** Each public mutation is one short local transaction; no HTTP call holds a DB lock. */
@@ -50,7 +49,7 @@ public class BookingTransactions {
         booking.setAutoSelect(input.autoSelect());
         booking.setStartDate(input.startDate());
         booking.setEndDate(input.endDate());
-        bookings.saveAndFlush(booking);
+        booking = bookings.save(booking);
         log.info(
                 "event=booking_state bookingId={} requestId={} state=PENDING",
                 booking.getId(),
@@ -60,17 +59,14 @@ public class BookingTransactions {
 
     public BookingView selectRoom(UUID id, Long roomId) {
         var b = lock(id);
-        if (b.getStatus() != BookingStatus.PENDING)
-            throw ApiException.conflict("Booking is no longer pending");
-        b.setRoomId(roomId);
-        return mapper.booking(b);
+        b.selectRoom(roomId);
+        return mapper.booking(bookings.save(b));
     }
 
     public BookingView confirm(UUID id) {
         var b = lock(id);
-        if (b.getStatus() != BookingStatus.PENDING)
-            throw ApiException.conflict("Booking was cancelled while confirming");
-        b.setStatus(BookingStatus.CONFIRMED);
+        b.confirm();
+        b = bookings.save(b);
         log.info("event=booking_state bookingId={} state=CONFIRMED", id);
         return mapper.booking(b);
     }
@@ -78,10 +74,8 @@ public class BookingTransactions {
     public BookingView cancel(UUID id, String reason, int status) {
         var b = lock(id);
         if (b.getStatus() != BookingStatus.CANCELLED) {
-            b.setStatus(BookingStatus.CANCELLED);
-            b.setFailureReason(reason);
-            b.setFailureStatus(status);
-            b.setCompensationRequired(b.getRoomId() != null);
+            b.cancel(reason, status);
+            b = bookings.save(b);
             log.info(
                     "event=booking_state bookingId={} state=CANCELLED compensationRequired={}",
                     id,
@@ -92,7 +86,8 @@ public class BookingTransactions {
 
     public void compensated(UUID id) {
         var b = lock(id);
-        if (b.getStatus() == BookingStatus.CANCELLED) b.setCompensationRequired(false);
+        b.compensated();
+        bookings.save(b);
         log.info("event=compensation_complete bookingId={}", id);
     }
 
@@ -115,19 +110,13 @@ public class BookingTransactions {
     public PageDto<BookingView> history(Long userId, int page, int size) {
         if (page < 0 || size < 1 || size > 100)
             throw ApiException.badRequest("page >= 0; size must be 1..100");
-        var result =
-                bookings.findByUserId(
-                        userId,
-                        PageRequest.of(
-                                page,
-                                size,
-                                Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("id"))));
+        var result = bookings.findByUserId(userId, page, size);
         return new PageDto<>(
-                result.map(mapper::booking).getContent(),
+                result.content().stream().map(mapper::booking).toList(),
                 page,
                 size,
-                result.getTotalElements(),
-                result.getTotalPages());
+                result.totalElements(),
+                result.totalPages());
     }
 
 

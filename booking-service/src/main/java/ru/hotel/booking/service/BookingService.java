@@ -34,6 +34,7 @@ public class BookingService {
                 status = remote.status();
             }
             if (e instanceof ApiException local) status = local.status().value();
+            if (e instanceof DomainConflictException) status = 409;
             log.warn("event=booking_failed bookingId={} reason={}", b.id(), e.getMessage());
             var cancelled =
                     transactions.cancel(

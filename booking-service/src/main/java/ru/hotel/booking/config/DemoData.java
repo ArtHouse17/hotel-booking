@@ -6,7 +6,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import ru.hotel.booking.domain.*;
-import ru.hotel.booking.repository.UserRepository;
+import ru.hotel.booking.domain.repository.UserRepository;
 
 @Component
 @ConditionalOnProperty(name = "app.seed", havingValue = "true", matchIfMissing = true)

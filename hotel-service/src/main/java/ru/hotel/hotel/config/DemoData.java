@@ -5,7 +5,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import ru.hotel.hotel.domain.*;
-import ru.hotel.hotel.repository.*;
+import ru.hotel.hotel.domain.repository.*;
 
 @Component
 @ConditionalOnProperty(name = "app.seed", havingValue = "true", matchIfMissing = true)

@@ -5,7 +5,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.hotel.common.*;
 import ru.hotel.hotel.domain.*;
-import ru.hotel.hotel.repository.*;
+import ru.hotel.hotel.domain.repository.*;
 
 @Service
 public class ReservationService {
@@ -25,9 +25,8 @@ public class ReservationService {
         var room = lock(roomId);
         var existing = reservations.findById(command.bookingId());
         if (existing.isPresent()) {
-            validateSame(existing.get(), roomId, command);
-            if (!existing.get().isActive())
-                throw ApiException.conflict("Reservation has already been released");
+            existing.get().verifyData(roomId, command.startDate(), command.endDate());
+            existing.get().requireActive();
             return;
         }
         if (!room.isAvailable()
@@ -37,7 +36,8 @@ public class ReservationService {
         reservations.save(
                 new RoomReservation(
                         command.bookingId(), room, command.startDate(), command.endDate(), true));
-        room.setTimesBooked(room.getTimesBooked() + 1);
+        room.book();
+        rooms.save(room);
         log.info("event=slot_confirmed bookingId={} roomId={}", command.bookingId(), roomId);
     }
 
@@ -57,10 +57,11 @@ public class ReservationService {
                             false));
         } else {
             var slot = existing.get();
-            validateSame(slot, roomId, command);
-            if (slot.isActive()) {
-                slot.setActive(false);
-                room.setTimesBooked(Math.max(0, room.getTimesBooked() - 1));
+            slot.verifyData(roomId, command.startDate(), command.endDate());
+            if (slot.release()) {
+                room.release();
+                reservations.save(slot);
+                rooms.save(room);
             }
         }
         log.info("event=slot_released bookingId={} roomId={}", command.bookingId(), roomId);
@@ -70,12 +71,4 @@ public class ReservationService {
         return rooms.lockById(id).orElseThrow(() -> ApiException.notFound("Room not found"));
     }
 
-    private void validateSame(RoomReservation slot, Long roomId, ReservationCommand command) {
-        if (!slot.getRoom().getId().equals(roomId)
-                || !slot.getStartDate().equals(command.startDate())
-                || !slot.getEndDate().equals(command.endDate())) {
-            throw ApiException.conflict(
-                    "bookingId was already used with different reservation data");
-        }
-    }
 }

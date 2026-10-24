@@ -23,6 +23,11 @@ public class ApiErrorHandler {
         return error(e.status(), e.getMessage(), request, Map.of());
     }
 
+    @ExceptionHandler(DomainConflictException.class)
+    ResponseEntity<ErrorDto> domainConflict(DomainConflictException e, HttpServletRequest request) {
+        return error(HttpStatus.CONFLICT, e.getMessage(), request, Map.of());
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     ResponseEntity<ErrorDto> validation(
             MethodArgumentNotValidException e, HttpServletRequest request) {

@@ -22,7 +22,7 @@ import ru.hotel.booking.api.BookingDtos.*;
 import ru.hotel.booking.api.UserDtos.*;
 import ru.hotel.booking.client.*;
 import ru.hotel.booking.domain.*;
-import ru.hotel.booking.repository.*;
+import ru.hotel.booking.persistence.repository.*;
 import ru.hotel.booking.service.*;
 import ru.hotel.common.*;
 import ru.hotel.common.security.JwtSupport;
@@ -40,8 +40,8 @@ class BookingIntegrationTest {
     @Autowired ObjectMapper json;
     @Autowired BookingService service;
     @Autowired BookingTransactions transactions;
-    @Autowired BookingRepository bookings;
-    @Autowired UserRepository users;
+    @Autowired BookingJpaRepository bookings;
+    @Autowired UserJpaRepository users;
     @Autowired UserService userService;
     @Autowired JwtEncoder encoder;
     @MockitoBean HotelPort hotel;
@@ -230,6 +230,15 @@ class BookingIntegrationTest {
 
     private CreateBooking manual() {
         return new CreateBooking(UUID.randomUUID(), false, 1L, null, start, end);
+    }
+
+    @Test
+    void userChangesArePersistedAcrossDomainMapping() {
+        userService.update(alice, new UserPatch("aliceupdated", "NewPassword123!", Role.ADMIN));
+        var reloaded = userService.get(alice);
+        assertThat(reloaded.username()).isEqualTo("aliceupdated");
+        assertThat(reloaded.role()).isEqualTo(Role.ADMIN);
+        assertThat(userService.login(new Credentials("aliceupdated", "NewPassword123!")).user().role()).isEqualTo(Role.ADMIN);
     }
 
     private HotelCallException remote(int status) {

@@ -19,7 +19,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import ru.hotel.common.*;
 import ru.hotel.common.security.JwtSupport;
 import ru.hotel.hotel.api.HotelDtos.*;
-import ru.hotel.hotel.repository.*;
+import ru.hotel.hotel.persistence.repository.*;
 import ru.hotel.hotel.service.*;
 
 @SpringBootTest(
@@ -34,9 +34,9 @@ class HotelIntegrationTest {
     @Autowired MockMvc mvc;
     @Autowired InventoryService inventory;
     @Autowired ReservationService reservations;
-    @Autowired ReservationRepository slots;
-    @Autowired RoomRepository rooms;
-    @Autowired HotelRepository hotels;
+    @Autowired ReservationJpaRepository slots;
+    @Autowired RoomJpaRepository rooms;
+    @Autowired HotelJpaRepository hotels;
     @Autowired JwtEncoder encoder;
     private Long roomId;
     private Long hotelId;
@@ -180,7 +180,7 @@ class HotelIntegrationTest {
         assertThat(inventory.room(roomId).timesBooked()).isZero();
         assertThat(inventory.available(null, start, end, true)).hasSize(1);
         assertThatThrownBy(() -> reservations.confirm(roomId, command))
-                .isInstanceOf(ApiException.class);
+                .isInstanceOf(DomainConflictException.class);
     }
 
     @Test
@@ -241,6 +241,15 @@ class HotelIntegrationTest {
         assertThat(inventory.available(hotelId, start, end, true))
                 .extracting(RoomView::id)
                 .containsExactly(second, roomId);
+    }
+
+    @Test
+    void roomChangesArePersistedAcrossDomainMapping() {
+        inventory.updateRoom(roomId, new RoomUpdate("renovated", false));
+        var reloaded = inventory.room(roomId);
+        assertThat(reloaded.number()).isEqualTo("renovated");
+        assertThat(reloaded.available()).isFalse();
+        assertThat(inventory.available(hotelId, start, end, true)).isEmpty();
     }
 
     private ReservationCommand command() {

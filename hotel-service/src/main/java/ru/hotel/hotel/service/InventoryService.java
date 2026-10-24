@@ -2,14 +2,13 @@ package ru.hotel.hotel.service;
 
 import java.time.*;
 import java.util.*;
-import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.hotel.common.*;
 import ru.hotel.hotel.api.*;
 import ru.hotel.hotel.api.HotelDtos.*;
 import ru.hotel.hotel.domain.*;
-import ru.hotel.hotel.repository.*;
+import ru.hotel.hotel.domain.repository.*;
 
 @Service
 @Transactional(readOnly = true)
@@ -34,7 +33,7 @@ public class InventoryService {
         if (page < 0 || size < 1 || size > 100)
             throw ApiException.badRequest("page >= 0; size must be 1..100");
         var all =
-                hotels.findAll(Sort.by("id")).stream()
+                hotels.findAll().stream()
                         .filter(
                                 h ->
                                         query == null
@@ -66,7 +65,7 @@ public class InventoryService {
         var hotel = findHotel(id);
         hotel.setName(input.name());
         hotel.setAddress(input.address());
-        return mapper.hotel(hotel);
+        return mapper.hotel(hotels.save(hotel));
     }
 
     @Transactional
@@ -93,7 +92,7 @@ public class InventoryService {
         var room = rooms.lockById(id).orElseThrow(() -> ApiException.notFound("Room not found"));
         room.setNumber(input.number());
         room.setAvailable(input.available());
-        return mapper.room(room);
+        return mapper.room(rooms.save(room));
     }
 
     @Transactional
@@ -117,7 +116,7 @@ public class InventoryService {
     }
 
     public List<RoomStatistics> statistics(Long hotelId) {
-        return rooms.findAll(Sort.by("timesBooked", "id")).stream()
+        return rooms.findAll().stream()
                 .filter(r -> hotelId == null || r.getHotel().getId().equals(hotelId))
                 .map(
                         r ->

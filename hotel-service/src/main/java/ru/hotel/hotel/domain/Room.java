@@ -1,36 +1,26 @@
 package ru.hotel.hotel.domain;
 
-import jakarta.persistence.*;
 import lombok.*;
+import ru.hotel.common.DomainConflictException;
 
-@Entity
-@Table(name = "rooms", uniqueConstraints = @UniqueConstraint(columnNames = {"hotel_id", "number"}))
-@Getter
-@Setter
-@NoArgsConstructor
+@Getter @Setter @NoArgsConstructor
 public class Room {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "hotel_id", nullable = false)
     private Hotel hotel;
-
-    @Column(nullable = false, length = 30)
     private String number;
-
-    @Column(nullable = false)
     private boolean available = true;
-
-    @Column(name = "times_booked", nullable = false)
     private long timesBooked;
-
-    @Version private long version;
 
     public Room(Hotel hotel, String number, boolean available) {
         this.hotel = hotel;
         this.number = number;
         this.available = available;
     }
+
+    public void book() {
+        if (!available) throw new DomainConflictException("Room is out of service");
+        timesBooked++;
+    }
+
+    public void release() { timesBooked = Math.max(0, timesBooked - 1); }
 }

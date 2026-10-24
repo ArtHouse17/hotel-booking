@@ -1,0 +1,10 @@
+**/target/
+.tools/
+.runtime/
+.maven-cache/
+.idea/
+*.iml
+.env
+*.log
+.DS_Store
+/hotel-booking-source.zip

@@ -4,6 +4,23 @@ REST API на Spring Boot: пользователи, отели, номера и
 
 Стек: Java 17, Spring Boot 3.5, Spring Cloud, Spring Security, JPA, H2, Maven.
 
+## Архитектура
+
+```mermaid
+flowchart LR
+    C[Клиент] --> G[API Gateway :8080]
+    G --> B[Booking Service]
+    G --> H[Hotel Service]
+    B -->|confirm / release| H
+    B --> BD[(H2: пользователи и брони)]
+    H --> HD[(H2: отели, номера и слоты)]
+    G -.-> E[Eureka :8761]
+    B -.-> E
+    H -.-> E
+```
+
+Пунктиром показано взаимодействие с реестром сервисов. [ADR-001](docs/adr/0001-booking-consistency.md) описывает подтверждение брони, компенсацию и защиту от повторных запросов.
+
 ## Запуск
 
 Нужен Docker с Docker Compose. Из корня проекта:

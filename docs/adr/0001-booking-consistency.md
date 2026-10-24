@@ -37,3 +37,5 @@ HTTP-вызовы выполняются вне транзакций БД. По 
 ## Проверка
 
 Сценарии успеха, отказа, тайм-аута, повторного запроса, параллельных бронирований и запоздалого подтверждения покрыты тестами [Booking Service](../../booking-service/src/test/java/ru/hotel/booking/BookingIntegrationTest.java), [HTTP-клиента](../../booking-service/src/test/java/ru/hotel/booking/HttpHotelClientTest.java) и [Hotel Service](../../hotel-service/src/test/java/ru/hotel/hotel/HotelIntegrationTest.java). Запуск из корня: `mvnw.cmd verify` или `bash mvnw verify`.
+
+[E2E-тесты](../../api-gateway/src/test/java/ru/hotel/gateway/HotelBookingE2EIT.java) проверяют взаимодействие работающих сервисов через Gateway без моков. При запущенном Docker Compose полный набор запускается командой `mvnw.cmd -Pe2e verify` или `bash mvnw -Pe2e verify`.

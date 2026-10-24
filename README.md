@@ -52,3 +52,5 @@ docker compose up --build
 ## Тесты
 
 Тесты запускаются при сборке Docker-образов. Отдельно с JDK 17+: `mvnw.cmd verify` (Windows) или `bash mvnw verify`.
+
+Для полной проверки с e2e сначала запустите Docker Compose, затем выполните `mvnw.cmd -Pe2e verify` или `bash mvnw -Pe2e verify`. E2E проверяют работающие сервисы через Gateway без моков; создают свои данные и отменяют свои брони. Тестовая история остаётся в H2 до перезапуска.

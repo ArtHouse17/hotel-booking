@@ -7,7 +7,7 @@ import lombok.*;
 import java.time.*;
 import java.util.UUID;
 
-/** Local projection of booking dates; released rows are idempotency tombstones. */
+/** Локальная копия дат бронирования; освобождённые записи сохраняются для идемпотентности. */
 @Entity
 @Table(
         name = "room_reservations",

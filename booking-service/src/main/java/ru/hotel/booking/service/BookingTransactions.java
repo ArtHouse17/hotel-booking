@@ -12,7 +12,9 @@ import ru.hotel.common.*;
 
 import java.util.*;
 
-/** Each public mutation is one short local transaction; no HTTP call holds a DB lock. */
+/**
+ * Изменения выполняются в коротких локальных транзакциях; HTTP-вызовы не удерживают блокировки БД.
+ */
 @Service
 @Transactional
 public class BookingTransactions {
@@ -32,8 +34,8 @@ public class BookingTransactions {
         DateRange.validate(input.startDate(), input.endDate());
         if (!input.autoSelect() && (input.roomId() == null || input.roomId() <= 0))
             throw ApiException.badRequest("A positive roomId is required when autoSelect=false");
-        // Serializing requests per user makes create-or-replay atomic, also across service
-        // instances.
+        // Блокировка пользователя делает создание или повтор запроса атомарными,
+        // в том числе при запуске нескольких экземпляров сервиса.
         var user =
                 users.lockById(userId).orElseThrow(() -> ApiException.notFound("User not found"));
         var existing = bookings.findByUserIdAndRequestId(userId, input.requestId());
@@ -96,7 +98,8 @@ public class BookingTransactions {
     @Transactional(readOnly = true)
     public BookingView get(UUID id, Long userId) {
         var b = bookings.findById(id).orElseThrow(() -> ApiException.notFound("Booking not found"));
-        // Returning 404 also prevents enumeration of another user's bookings.
+        // Ответ 404 не позволяет узнать о существовании чужих бронирований перебором
+        // идентификаторов.
         if (!b.getUser().getId().equals(userId)) throw ApiException.notFound("Booking not found");
         return mapper.booking(b);
     }

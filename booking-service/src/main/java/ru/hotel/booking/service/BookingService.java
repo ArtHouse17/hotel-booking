@@ -51,7 +51,8 @@ public class BookingService {
     }
 
     private void autoConfirm(BookingView booking) {
-        // The Hotel lock is the final arbiter: a recommendation is only a snapshot.
+        // Рекомендации отражают доступность на момент запроса; окончательная проверка
+        // выполняется под блокировкой номера в Hotel Service.
         var candidates = recommend(booking.hotelId(), booking.startDate(), booking.endDate());
         for (var room : candidates) {
             var selected = transactions.selectRoom(booking.id(), room.id());

@@ -22,7 +22,7 @@ public class ReservationService {
     @Transactional
     public void confirm(Long roomId, ReservationCommand command) {
         DateRange.validate(command.startDate(), command.endDate());
-        // The room row is the database mutex for all overlapping date intervals.
+        // Блокировка строки номера защищает от бронирований на пересекающиеся даты.
         var room = lock(roomId);
         var existing = reservations.findById(command.bookingId());
         if (existing.isPresent()) {
@@ -48,7 +48,7 @@ public class ReservationService {
         var room = lock(roomId);
         var existing = reservations.findById(command.bookingId());
         if (existing.isEmpty()) {
-            // A delayed confirm after a timeout must never resurrect a cancelled booking.
+            // Запоздалое подтверждение после тайм-аута не должно восстановить отменённую бронь.
             reservations.save(
                     new RoomReservation(
                             command.bookingId(),
